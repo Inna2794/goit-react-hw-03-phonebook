@@ -1,58 +1,99 @@
 import React, { Component } from 'react';
-import Form from 'components/Form';
-import Filter from 'components/Filter';
-import Contacts from 'components/Contacts';
+import Notiflix from 'notiflix';
+import fetchPictures from './pictureApiService';
+import SearchBar from 'components/Searchbar';
+import ImageGallery from 'components/ImageGallery';
+import Button from 'components/Button';
+import Loader from 'components/Loader';
+import Modal from 'components/Modal';
 
 export class App extends Component {
   state = {
-    contacts: [],
-    filter: '',
+    pictures: [],
+    isLoading: false,
+    showModal: false,
+    loadMore: false,
+    error: null,
+    searchQuery: '',
+    pageNumber: 1,
+    modalURL: '',
   };
 
-  componentDidMount() {
-    const dataParsed = JSON.parse(localStorage.getItem('phoneBook'));
-    if (!dataParsed) return;
-    this.setState({ contacts: dataParsed });
-  }
+  async componentDidUpdate(prevProps, prevState) {
+    if (
+      this.state.searchQuery !== prevState.searchQuery ||
+      this.state.pageNumber !== prevState.pageNumber
+    ) {
+      this.setState({ isLoading: true });
+      try {
+        const pictures = await fetchPictures(
+          this.state.searchQuery,
+          this.state.pageNumber
+        );
+        this.setState({ loadMore: true });
+        if (pictures.length === 0) {
+          Notiflix.Notify.failure(
+            'Sorry, there are no images matching your search query. Please try again.'
+          );
+          this.setState({ loadMore: false });
+        }
 
-  componentDidUpdate() {
-    localStorage.setItem('phoneBook', JSON.stringify(this.state.contacts));
-  }
+        if (pictures.length < 12) {
+          this.setState({ loadMore: false });
+        }
 
-  formSubmitHandler = data => {
-    let check = false;
-    if (this.state.contacts !== '') {
-      check = this.state.contacts.find(
-        el => el.name.toLowerCase() === data.name.toLowerCase()
-      );
+        this.setState({
+          pictures: [...this.state.pictures, ...pictures],
+        });
+      } catch (error) {
+        this.setState({ error });
+        console.log(error);
+      } finally {
+        this.setState({ isLoading: false });
+      }
     }
-    return check
-      ? alert(`${data.name} is already exist.`)
-      : this.setState({ contacts: [...this.state.contacts, data] });
+  }
+
+  formSubmitHandler = query => {
+    this.setState({ searchQuery: query, pageNumber: 1, pictures: [] });
   };
 
-  handleChangeFilter = data => {
-    this.setState({ filter: data });
+  imageClickHandler = url => {
+    this.setState({ modalURL: url });
+    this.toggleModal();
   };
 
-  handleClickDelete = data => {
-    this.setState({
-      contacts: this.state.contacts.filter(el => el.id !== data),
-    });
+  toggleModal = () => {
+    this.setState(({ showModal }) => ({ showModal: !showModal }));
+  };
+
+  loadMoreHandler = pageNumber => {
+    this.setState({ pageNumber });
   };
 
   render() {
+    const { isLoading, pictures, showModal, modalURL, loadMore } = this.state;
     return (
       <div>
-        <h2 style={{ color: '#ff6c00' }}>Phonebook</h2>
-        <Form onSubmit={this.formSubmitHandler} />
-        <h2 style={{ color: '#ff6c00' }}>Contacts</h2>
-        <Filter onChange={this.handleChangeFilter} filter={this.state.filter} />
-        <Contacts
-          onDelete={this.handleClickDelete}
-          data={this.state.contacts}
-          filter={this.state.filter}
-        />
+        <SearchBar onSubmit={this.formSubmitHandler} />
+        <div className="gallery-wrap">
+          <ImageGallery
+            pictures={pictures}
+            onClick={this.imageClickHandler}
+          ></ImageGallery>
+          {loadMore && (
+            <Button
+              onClick={this.loadMoreHandler}
+              page={this.state.pageNumber}
+            ></Button>
+          )}
+        </div>
+        {isLoading && <Loader />}
+        {showModal && (
+          <Modal onClose={this.toggleModal}>
+            <img src={modalURL} alt={pictures.tags} />
+          </Modal>
+        )}
       </div>
     );
   }
