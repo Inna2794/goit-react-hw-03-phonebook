@@ -7,6 +7,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 18px;
 }
 
 code {
@@ -14,20 +15,28 @@ code {
     monospace;
 }
 
-ul {
+h1,
+h2,
+p,
+button,
+li,
+ul,
+ol {
   padding: 0;
   margin: 0;
 }
-
+/* 
 li {
   list-style-type: none;
-}
+} */
 
-.gallery-wrap {
-  width: 1200px;
+div {
+  width: 400px;
   margin-left: auto;
   margin-right: auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+}
+
+h2 {
+  margin-top: 20px;
+  margin-bottom: 10px;
 }
