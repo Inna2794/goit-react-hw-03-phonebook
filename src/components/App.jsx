@@ -11,15 +11,18 @@ export class App extends Component {
 
   componentDidMount() {
     const dataParsed = JSON.parse(localStorage.getItem('phoneBook'));
-    if (!dataParsed || dataParsed === '') {
+    if (!dataParsed) {
       this.setState({ contacts: [] });
     } else {
       this.setState({ contacts: dataParsed });
     }
   }
 
-  componentDidUpdate() {
-    localStorage.setItem('phoneBook', JSON.stringify(this.state.contacts));
+  componentDidUpdate(_, prevState) {
+    const { contacts } = this.state;
+    if (contacts !== prevState.contacts) {
+      localStorage.setItem('phoneBook', JSON.stringify(contacts));
+    }
   }
 
   formSubmitHandler = data => {
